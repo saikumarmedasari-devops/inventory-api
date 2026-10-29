@@ -1,0 +1,96 @@
+
+name: Inventory API CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Python Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install build tool
+        run: python -m pip install build
+
+      - name: Build wheel and source distribution
+        run: python -m build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory-api-package
+          path: dist/
+
+  test:
+    name: Run Automated Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install application and test dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run pytest
+        run: python -m pytest -v
+
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Ruff
+        run: python -m pip install ruff
+
+      - name: Check code quality
+        run: ruff check app.py tests/
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install security tools
+        run: python -m pip install -r requirements.txt bandit pip-audit
+
+      - name: Scan Python source code
+        run: bandit -ll app.py
+
+      - name: Audit application dependencies
+        run: pip-audit -r requirements.txt
